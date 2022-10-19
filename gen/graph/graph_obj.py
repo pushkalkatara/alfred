@@ -5,8 +5,8 @@ import time
 import networkx as nx
 import numpy as np
 
-import constants
-from gen.utils import game_util
+import alfred.gen.constants as constants
+from alfred.gen.utils import game_util
 
 MAX_WEIGHT_IN_GRAPH = 1e5
 PRED_WEIGHT_THRESH = 10
@@ -35,9 +35,7 @@ class Graph(object):
 
         self.scene_id = scene_id
         self.points = np.load(os.path.join(
-            os.path.dirname(__file__),
-            os.pardir,
-            'layouts',
+            constants.LAYOUTS_PATH,
             'FloorPlan%s-layout.npy' % self.scene_id))
         self.points /= constants.AGENT_STEP_SIZE
         self.points = np.round(self.points).astype(np.int32)
@@ -293,8 +291,8 @@ class Graph(object):
             raise ex
 
         if (pose, goal_pose) not in self.shortest_paths_unweighted:
-            # TODO: swap this out for astar (might be get_shortest_path tho) and update heuristic to account for
-            # TODO: actual number of turns.
+            # TODA: swap this out for astar (might be get_shortest_path tho) and update heuristic to account for
+            # TODA: actual number of turns.
             path = nx.shortest_path(self.gt_graph, pose, goal_pose)
             for ii, pp in enumerate(path):
                 self.shortest_paths_unweighted[(pp, goal_pose)] = path[ii:]

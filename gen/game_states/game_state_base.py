@@ -6,11 +6,11 @@ import time
 import cv2
 import numpy as np
 
-import constants
-from graph import graph_obj
-from utils import game_util
-from utils.py_util import SetWithGet
-from utils.image_util import compress_mask
+import alfred.gen.constants as constants
+from alfred.gen.graph import graph_obj
+from alfred.gen.utils import game_util
+from alfred.gen.utils.py_util import SetWithGet
+from alfred.gen.utils.image_util import compress_mask
 
 
 class GameStateBase(object):
@@ -139,10 +139,10 @@ class GameStateBase(object):
                     for o, c in objs['empty']:
                         free_per_receptacle.append({'objectType': o, 'count': c})
             self.env.step(dict(action='InitialRandomSpawn', randomSeed=seed, forceVisible=False,
-                               numRepeats=[{'objectType': o, 'count': c}
+                               numDuplicatesOfType=[{'objectType': o, 'count': c}
                                            for o, c in objs['repeat']]
                                if objs is not None and 'repeat' in objs else None,
-                               minFreePerReceptacleType=free_per_receptacle if objs is not None else None
+                               receptacleObjectIds=free_per_receptacle if objs is not None else None
                                ))
 
             # if 'clean' action, make everything dirty and empty out fillable things
@@ -180,9 +180,10 @@ class GameStateBase(object):
                   'x': self.start_point[0] * constants.AGENT_STEP_SIZE,
                   'y': self.agent_height,
                   'z': self.start_point[1] * constants.AGENT_STEP_SIZE,
-                  'rotateOnTeleport': True,
+                  #'rotateOnTeleport': True,
                   'horizon': 30,
                   'rotation': self.start_point[2] * 90,
+                  'standing': True
                   }
         self.event = self.env.step(action)
 

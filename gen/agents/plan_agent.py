@@ -1,7 +1,7 @@
-import constants
-from agents.agent_base import AgentBase
-from game_states.planned_game_state import PlannedGameState
-from utils import game_util
+import alfred.gen.constants as constants
+from alfred.gen.agents.agent_base import AgentBase
+from alfred.gen.game_states.planned_game_state import PlannedGameState
+from alfred.gen.utils import game_util
 
 
 class PlanAgent(AgentBase):

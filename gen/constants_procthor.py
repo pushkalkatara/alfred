@@ -224,7 +224,7 @@ OBJECTS = [
     'StoveKnob',
     'DiningTable',
     'CoffeeTable',
-#    'SideTable',
+    'SideTable',
     'TeddyBear',
     'Television',
     'TennisRacket',
@@ -337,7 +337,7 @@ OBJECTS_SINGULAR = [
     'stoveknob',
     'diningtable',
     'coffeetable',
-#    'sidetable'
+    'sidetable'
     'teddybear',
     'television',
     'tennisracket',
@@ -449,7 +449,7 @@ OBJECTS_PLURAL = [
     'stoveknobs',
     'diningtables',
     'coffeetables',
-#    'sidetable',
+    'sidetable',
     'teddybears',
     'televisions',
     'tennisrackets',
@@ -508,7 +508,7 @@ RECEPTACLES = {
         'StoveBurner',
         'DiningTable',
         'CoffeeTable',
-#        'SideTable',
+        'SideTable',
         'ToiletPaperHanger',
         'TowelHolder',
         'Safe',
@@ -1123,7 +1123,7 @@ VAL_RECEPTACLE_OBJECTS = {
 }
 VAL_RECEPTACLE_OBJECTS['DiningTable'] = VAL_RECEPTACLE_OBJECTS['TableTop']
 VAL_RECEPTACLE_OBJECTS['CoffeeTable'] = VAL_RECEPTACLE_OBJECTS['TableTop']
-#VAL_RECEPTACLE_OBJECTS['SideTable'] = VAL_RECEPTACLE_OBJECTS['TableTop']
+VAL_RECEPTACLE_OBJECTS['SideTable'] = VAL_RECEPTACLE_OBJECTS['TableTop']
 del VAL_RECEPTACLE_OBJECTS['TableTop']
 
 NON_RECEPTACLES_SET = (OBJECTS_SET - set(VAL_RECEPTACLE_OBJECTS.keys())) | set(MOVABLE_RECEPTACLES)

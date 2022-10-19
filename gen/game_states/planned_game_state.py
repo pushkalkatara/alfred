@@ -1,11 +1,11 @@
 import copy
 import json
 import os
-import constants
-from game_states.game_state_base import GameStateBase
-from planner import ff_planner_handler
-from utils import game_util
-from utils import py_util
+import alfred.gen.constants as constants
+from alfred.gen.game_states.game_state_base import GameStateBase
+from alfred.gen.planner import ff_planner_handler
+from alfred.gen.utils import game_util
+from alfred.gen.utils import py_util
 from abc import ABC
 
 
@@ -257,7 +257,7 @@ class PlannedGameState(GameStateBase, ABC):
                                           if (object_dict[obj]['objectType'] in constants.VAL_ACTION_OBJECTS['Sliceable'])])
 
         # sliced objects
-        # TODO cleanup: sliced_object_ids is never added to. Does that matter?
+        # TODA cleanup: sliced_object_ids is never added to. Does that matter?
         is_sliced_str = '\n        '.join((['(isSliced %s)' % obj
                                             for obj in self.sliced_object_ids
                                             if object_dict[obj]['objectType'] == constants.OBJECTS[self.object_target]]))
@@ -467,7 +467,8 @@ class PlannedGameState(GameStateBase, ABC):
                                             scene=scene, objs=objs)
         self.gt_graph.clear()
 
-        points_source = 'layouts/%s-openable.json' % self.scene_name
+        points_source = '{}/{}-openable.json'.format(
+            constants.LAYOUTS_PATH, self.scene_name)
         with open(points_source, 'r') as f:
             openable_object_to_point = json.load(f)
         self.openable_object_to_point = openable_object_to_point

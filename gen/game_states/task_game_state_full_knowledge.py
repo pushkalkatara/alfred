@@ -1,12 +1,12 @@
 import copy
 import sys
-import constants
 import numpy as np
-from game_states.game_state_base import GameStateBase
-from game_states.planned_game_state import PlannedGameState
-from game_states.task_game_state import TaskGameState
-from utils import bb_util
-from utils import game_util
+import alfred.gen.constants as constants
+from alfred.gen.game_states.game_state_base import GameStateBase
+from alfred.gen.game_states.planned_game_state import PlannedGameState
+from alfred.gen.game_states.task_game_state import TaskGameState
+from alfred.gen.utils import bb_util
+from alfred.gen.utils import game_util
 
 
 class TaskGameStateFullKnowledge(TaskGameState):
@@ -103,7 +103,7 @@ class TaskGameStateFullKnowledge(TaskGameState):
                         if parent_obj['objectType'] not in constants.RECEPTACLES:
                             # Weird corner cases of things that aren't listed as receptacles
                             continue
-                        # TODO: cleanup suffix fix?
+                        # TODA: cleanup suffix fix?
                         fix_basin = False
                         if parent.startswith('Sink') and not parent.endswith('Basin'):
                             fix_basin = True
@@ -128,7 +128,7 @@ class TaskGameStateFullKnowledge(TaskGameState):
                     # Make toggleable objects navigable and record toggle metadata.
                     if obj['toggleable'] and obj['objectType'] in constants.VAL_ACTION_OBJECTS['Toggleable']:
                         # make a set of toggleable objects
-                        # TODO: this shouldn't be unecessarily updated on every call
+                        # TODA: this shouldn't be unecessarily updated on every call
                         if not obj_id in self.toggleable_object_ids:
                             self.toggleable_object_ids.add(obj_id)
 
@@ -417,7 +417,7 @@ class TaskGameStateFullKnowledge(TaskGameState):
             else:
                 parent = obj['parentReceptacles']
             if parent is not None and len(parent) > 0:
-                # TODO (cleanup): remove hack
+                # TODA (cleanup): remove hack
                 fix_basin = False
                 if parent.startswith('Sink') and not parent.endswith('Basin'):
                     parent = parent + "|SinkBasin"

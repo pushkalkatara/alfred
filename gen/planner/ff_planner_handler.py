@@ -6,9 +6,9 @@ import shlex
 import subprocess
 import time
 
-import constants
-from utils import game_util
-from utils import py_util
+import alfred.gen.constants as constants
+from alfred.gen.utils import game_util
+from alfred.gen.utils import py_util
 
 DEBUG = False
 
@@ -137,10 +137,10 @@ def get_plan_from_file(args):
 
     start_t = time.time()
     try:
-        command = ('ff_planner/ff '
+        command = ('%s '
                    '-o %s '
                    '-s %d '
-                   '-f %s ' % (domain, solver_type, filepath))
+                   '-f %s ' % (constants.FF_PATH, domain, solver_type, filepath))
         if DEBUG:
             print(command)
         planner_output = subprocess.check_output(shlex.split(command), timeout=30)
@@ -246,7 +246,8 @@ if __name__ == '__main__':
     import sys
 
     DEBUG = constants.DEBUG
-    parser = PlanParser('planner/domains/PutTaskExtended_domain.pddl')
+    parser = PlanParser('{}/domains/PutTaskExtended_domain.pddl'.format(
+        constants.PLANNER_PATH))
     parser.problem_id = sys.argv[1]
     result_plan = parser.get_plan()
     print('plan\n' + '\n'.join(['%03d: %s' % (pp, game_util.get_action_str(pl)) for pp, pl in enumerate(result_plan)]))

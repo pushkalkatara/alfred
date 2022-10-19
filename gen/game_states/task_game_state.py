@@ -1,9 +1,9 @@
 import os
 import random
-import constants
-import goal_library as glib
-from game_states.planned_game_state import PlannedGameState
-from utils import game_util
+import alfred.gen.constants as constants
+import alfred.gen.goal_library as glib
+from alfred.gen.game_states.planned_game_state import PlannedGameState
+from alfred.gen.utils import game_util
 
 
 class TaskGameState(PlannedGameState):
@@ -17,8 +17,10 @@ class TaskGameState(PlannedGameState):
     def __init__(self, env, seed=None, action_space=None):
         if action_space is None:
             action_space = TaskGameState.action_space
-        super(TaskGameState, self).__init__(env, seed, action_space,
-                                            'put_task', 'planner/domains/PutTaskExtended_domain.pddl')
+        super(TaskGameState, self).__init__(
+            env, seed, action_space,
+            'put_task', '{}/domains/PutTaskExtended_domain.pddl'.format(
+                constants.PLANNER_PATH))
         self.task_target = None
         self.success = False
 
@@ -108,11 +110,11 @@ class TaskGameState(PlannedGameState):
             return len(valid_recep) > 0
 
         def does_recep_have_enough_space(r):
-            # TODO: how to check this with THOR 2.1.0?
+            # TODA: how to check this with THOR 2.1.0?
             return True
 
         def is_recep_full(r):
-            # TODO: how to check this with THOR 2.1.0?
+            # TODA: how to check this with THOR 2.1.0?
             return False
 
         def can_recep_hold_obj(o, r):

@@ -1,5 +1,6 @@
+import os
 import subprocess
-import constants
+import alfred.gen.constants as constants
 
 class VideoSaver(object):
 
@@ -7,5 +8,6 @@ class VideoSaver(object):
         self.frame_rate = frame_rate
 
     def save(self, image_path, save_path):
-        subprocess.call(["ffmpeg -r %d -pattern_type glob -y -i '%s' -c:v libx264 -pix_fmt yuv420p '%s'" %
-                         (self.frame_rate, image_path, save_path)], shell=True)
+        with open(os.devnull, 'w') as devnull:
+            subprocess.call(["ffmpeg -r %d -pattern_type glob -y -i '%s' -c:v libx264 -pix_fmt yuv420p '%s'" %
+                             (self.frame_rate, image_path, save_path)], shell=True, stdout=devnull, stderr=devnull)
