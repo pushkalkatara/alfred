@@ -6,7 +6,7 @@ import shlex
 import subprocess
 import time
 
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 from alfred.gen.utils import game_util
 from alfred.gen.utils import py_util
 

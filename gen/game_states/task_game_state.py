@@ -1,6 +1,6 @@
 import os
 import random
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 import alfred.gen.goal_library as glib
 from alfred.gen.game_states.planned_game_state import PlannedGameState
 from alfred.gen.utils import game_util
@@ -73,6 +73,7 @@ class TaskGameState(PlannedGameState):
             # load a pre-specified sscene
             self.scene_num = scene['scene_num']
             self.scene_seed = scene['random_seed']
+            self.scene = scene['procthor_scene']
 
         self.object_target = -1
         self.parent_target = -1

@@ -3,7 +3,7 @@ import random
 import cv2
 import numpy as np
 
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 import alfred.gen.goal_library as glib
 
 

@@ -2,16 +2,18 @@ import copy
 import glob
 import random
 import time
+import pdb
 
 import cv2
 import numpy as np
 
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 from alfred.gen.graph import graph_obj
 from alfred.gen.utils import game_util
 from alfred.gen.utils.py_util import SetWithGet
 from alfred.gen.utils.image_util import compress_mask
 
+import pdb
 
 class GameStateBase(object):
     static_action_space = [
@@ -108,17 +110,20 @@ class GameStateBase(object):
         if self.scene_num is None:
             self.scene_num = self.local_random.choice(constants.SCENE_NUMBERS)
         self.scene_num = self.scene_num
-
+        
         if scene is not None:
             self.scene_num = scene['scene_num']
             seed = scene['random_seed']
+            self.scene_ = scene['procthor_scene']
 
-        self.scene_name = 'FloorPlan%d' % self.scene_num
-        self.event = self.env.reset(self.scene_name)
+        self.scene_name = 'House%d' % self.scene_num
+
+        #self.event = self.env.reset(self.scene_name)
+        self.event = self.env.reset(self.scene_)
         if max_num_repeats is None:
             self.event = self.env.random_initialize(seed)
         else:
-            self.env.step(dict(
+            event_ = self.env.step(dict(
                 action='Initialize',
                 gridSize=constants.AGENT_STEP_SIZE / constants.RECORD_SMOOTHING_FACTOR,
                 cameraY=constants.CAMERA_HEIGHT_OFFSET,
@@ -130,20 +135,37 @@ class GameStateBase(object):
                 makeAgentsVisible=False,
             ))
 
+            if not event_.metadata["lastActionSuccess"]:
+                print(event_.metadata["errorMessage"])
+                pdb.set_trace()
+            
             free_per_receptacle = []
             if objs is not None:
+                '''
                 if 'sparse' in objs:
                     for o, c in objs['sparse']:
                         free_per_receptacle.append({'objectType': o, 'count': c})
                 if 'empty' in objs:
                     for o, c in objs['empty']:
                         free_per_receptacle.append({'objectType': o, 'count': c})
-            self.env.step(dict(action='InitialRandomSpawn', randomSeed=seed, forceVisible=False,
+                '''
+                if 'sparse' in objs:
+                    for o, c in objs['sparse']:
+                        free_per_receptacle.append(o)
+                if 'empty' in objs:
+                    for o, c in objs['empty']:
+                        free_per_receptacle.append(o)
+            print(objs)
+            print(seed)
+            event_ = self.env.step(dict(action='InitialRandomSpawn', randomSeed=seed, forceVisible=False,
                                numDuplicatesOfType=[{'objectType': o, 'count': c}
                                            for o, c in objs['repeat']]
                                if objs is not None and 'repeat' in objs else None,
-                               receptacleObjectIds=free_per_receptacle if objs is not None else None
+                               excludedReceptacles=free_per_receptacle if objs is not None else None
                                ))
+            if not event_.metadata["lastActionSuccess"]:
+                print(event_.metadata["errorMessage"])
+                pdb.set_trace()
 
             # if 'clean' action, make everything dirty and empty out fillable things
             if constants.pddl_goal_type == "pick_clean_then_place_in_recep":
@@ -187,10 +209,15 @@ class GameStateBase(object):
                   }
         self.event = self.env.step(action)
 
+        if not self.event.metadata["lastActionSuccess"]:
+            print(self.event.metadata["errorMessage"])
+            pdb.set_trace()
+
         constants.data_dict['scene']['scene_num'] = self.scene_num
         constants.data_dict['scene']['init_action'] = action
         constants.data_dict['scene']['floor_plan'] = self.scene_name
         constants.data_dict['scene']['random_seed'] = seed
+        constants.data_dict['scene']['procthor_scene'] = self.scene
 
         self.pose = game_util.get_pose(self.event)
 
@@ -268,6 +295,7 @@ class GameStateBase(object):
             discrete_action['args']['mask'] = mask
         elif 'PutObject' in a_type:
             bbox, point, mask = self.get_bbox_point_mask(action['receptacleObjectId'])
+            del action['receptacleObjectId']
             discrete_action['action'] = "PutObject"
             discrete_action['args']['bbox'] = bbox
             discrete_action['args']['point'] = point
@@ -404,6 +432,7 @@ class GameStateBase(object):
                                 new_action['z'] = np.round(position['z'] * (1 - xx) + action['z'] * xx, 5)
                                 new_action['rotation'] = start_rotation
                                 new_action['horizon'] = start_horizon
+                                new_action['standing'] = True
                                 self.event = self.env.step(new_action)
                                 cv2.imwrite(constants.save_path + '/%09d.png' % im_ind,
                                             self.event.frame[:, :, ::-1])
@@ -415,6 +444,7 @@ class GameStateBase(object):
                                 new_action = copy.deepcopy(action)
                                 new_action['horizon'] = np.round(start_horizon * (1 - xx) + end_horizon * xx, 3)
                                 new_action['rotation'] = start_rotation
+                                new_action['standing'] = True
                                 self.event = self.env.step(new_action)
                                 cv2.imwrite(constants.save_path + '/%09d.png' % im_ind,
                                             self.event.frame[:, :, ::-1])
@@ -425,6 +455,7 @@ class GameStateBase(object):
                             for xx in np.arange(.1, 1, .1):
                                 new_action = copy.deepcopy(action)
                                 new_action['rotation'] = np.round(start_rotation * (1 - xx) + end_rotation * xx, 3)
+                                new_action['standing'] = True
                                 self.event = self.env.step(new_action)
                                 cv2.imwrite(constants.save_path + '/%09d.png' % im_ind,
                                             self.event.frame[:, :, ::-1])
@@ -542,7 +573,7 @@ class GameStateBase(object):
 
                         # put the object
                         put_action = dict(action=action['action'],
-                                          objectId=action['objectId'],
+                                          objectId=action['receptacleObjectId'],
                                           receptacleObjectId=action['receptacleObjectId'],
                                           forceAction=True,
                                           placeStationary=True)
@@ -564,9 +595,13 @@ class GameStateBase(object):
                         # put the object in the sink
                         sink_obj_id = self.get_some_visible_obj_of_name('SinkBasin')['objectId']
                         inv_obj = self.env.last_event.metadata['inventoryObjects'][0]
+                        #put_action = dict(action='PutObject',
+                        #                  objectId=inv_obj['objectId'],
+                        #                  receptacleObjectId=sink_obj_id,
+                        #                  forceAction=True,
+                        #                  placeStationary=True)
                         put_action = dict(action='PutObject',
-                                          objectId=inv_obj['objectId'],
-                                          receptacleObjectId=sink_obj_id,
+                                          objectId=sink_obj_id,
                                           forceAction=True,
                                           placeStationary=True)
                         self.store_ll_action(put_action)
@@ -786,8 +821,9 @@ class GameStateBase(object):
                         'x': start_pose[0] * constants.AGENT_STEP_SIZE,
                         'y': self.agent_height,
                         'z': start_pose[1] * constants.AGENT_STEP_SIZE,
-                        'rotateOnTeleport': True,
+                        #'rotateOnTeleport': True,
                         'rotation': new_pose[2] * 90,
+                        'standing': True
                     })
                     self.env.last_event.metadata['lastActionSuccess'] = False
 

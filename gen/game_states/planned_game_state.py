@@ -1,7 +1,7 @@
 import copy
 import json
 import os
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 from alfred.gen.game_states.game_state_base import GameStateBase
 from alfred.gen.planner import ff_planner_handler
 from alfred.gen.utils import game_util
@@ -380,9 +380,10 @@ class PlannedGameState(GameStateBase, ABC):
                        'x': nearest_point[0] * constants.AGENT_STEP_SIZE,
                        'y': self.agent_height,
                        'z': nearest_point[1] * constants.AGENT_STEP_SIZE,
-                       'rotateOnTeleport': True,
+                       #'rotateOnTeleport': True,
                        'rotation': nearest_point[2] * 90,
-                       'horizon': nearest_point[3]
+                       'horizon': nearest_point[3],
+                       'standing':True
                        }
         return next_action
 

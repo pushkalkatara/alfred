@@ -1,7 +1,7 @@
 import copy
 import sys
 import numpy as np
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 from alfred.gen.game_states.game_state_base import GameStateBase
 from alfred.gen.game_states.planned_game_state import PlannedGameState
 from alfred.gen.game_states.task_game_state import TaskGameState
@@ -276,8 +276,9 @@ class TaskGameStateFullKnowledge(TaskGameState):
                 'x': point_x * constants.AGENT_STEP_SIZE,
                 'y': self.agent_height,
                 'z': point_z * constants.AGENT_STEP_SIZE,
-                'rotateOnTeleport': True,
+                #'rotateOnTeleport': True,
                 'rotation': action['rotation'],
+                'standing': True
             }
 
         elif ((action['action'] == 'OpenObject' or action['action'] == 'CloseObject') and
@@ -426,6 +427,12 @@ class TaskGameStateFullKnowledge(TaskGameState):
                     parent = parent + "|BathtubBasin"
                     fix_basin = True
 
+                # ignore Floor as receptacle
+                fix_floor = True
+                if fix_floor:
+                    if parent.startswith('Floor'):
+                        continue
+
                 if fix_basin:
                     try:
                         parent = game_util.get_object(parent, self.env.last_event.metadata)
@@ -433,6 +440,8 @@ class TaskGameStateFullKnowledge(TaskGameState):
                         raise Exception('No object named %s in scene %s' % (parent, self.scene_name))
                 else:
                     parent = game_util.get_object(parent, self.env.last_event.metadata)
+                
+
 
                 if not parent['openable'] or parent['isOpen']:
                     parent_receptacle = parent['objectId']

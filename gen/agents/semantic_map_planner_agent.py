@@ -1,6 +1,6 @@
 import glob
 import cv2
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 from alfred.gen.agents.agent_base import AgentBase
 from alfred.gen.agents.plan_agent import PlanAgent
 from alfred.gen.game_states.planned_game_state import PlannedGameState

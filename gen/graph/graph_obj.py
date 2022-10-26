@@ -5,7 +5,7 @@ import time
 import networkx as nx
 import numpy as np
 
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 from alfred.gen.utils import game_util
 
 MAX_WEIGHT_IN_GRAPH = 1e5
@@ -36,7 +36,7 @@ class Graph(object):
         self.scene_id = scene_id
         self.points = np.load(os.path.join(
             constants.LAYOUTS_PATH,
-            'FloorPlan%s-layout.npy' % self.scene_id))
+            'House%s-layout.npy' % self.scene_id))
         self.points /= constants.AGENT_STEP_SIZE
         self.points = np.round(self.points).astype(np.int32)
         self.xMin = self.points[:, 0].min() - constants.SCENE_PADDING * 2
@@ -397,9 +397,10 @@ if __name__ == '__main__':
                   'x': start_pose[0] * constants.AGENT_STEP_SIZE,
                   'y': agent_height,
                   'z': start_pose[1] * constants.AGENT_STEP_SIZE,
-                  'rotateOnTeleport': True,
+                  #'rotateOnTeleport': True,
                   'rotation': start_pose[2],
                   'horizon': start_pose[3],
+                  'standing': True
                   }
         env.step(action)
         actions, path = graph.get_shortest_path(start_pose, end_pose)

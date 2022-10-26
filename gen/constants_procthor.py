@@ -43,13 +43,13 @@ GOALS = ["pick_and_place_simple",
          "pick_cool_then_place_in_recep",
          "pick_and_place_with_movable_recep"]
 
-GOALS_VALID = {"pick_and_place_simple": {"Kitchen", "LivingRoom", "Bathroom", "Bedroom"},
-               "pick_two_obj_and_place": {"Kitchen", "LivingRoom", "Bathroom", "Bedroom"},
-               "look_at_obj_in_light": {"LivingRoom", "Bedroom"},
-               "pick_clean_then_place_in_recep": {"Kitchen", "Bathroom"},
-               "pick_heat_then_place_in_recep": {"Kitchen"},
-               "pick_cool_then_place_in_recep": {"Kitchen"},
-               "pick_and_place_with_movable_recep": {"Kitchen", "LivingRoom", "Bedroom"}}
+GOALS_VALID = {"pick_and_place_simple": {"kitchen", "living-room", "bathroom", "bedroom"},
+               "pick_two_obj_and_place": {"kitchen", "living-room", "bathroom", "bedroom"},
+               "look_at_obj_in_light": {"living-room", "bedroom"},
+               "pick_clean_then_place_in_recep": {"kitchen", "bathroom"},
+               "pick_heat_then_place_in_recep": {"kitchen"},
+               "pick_cool_then_place_in_recep": {"kitchen"},
+               "pick_and_place_with_movable_recep": {"kitchen", "living-room", "bedroom"}}
 
 pddl_goal_type = "pick_and_place_simple"  # default goal type
 
@@ -129,14 +129,19 @@ TEST_SCENE_NUMBERS.extend(list(range(401, 407)))   # Test Bathrooms (6/30)
 SCENE_NUMBERS = TRAIN_SCENE_NUMBERS + TEST_SCENE_NUMBERS
 
 # Scene types.
-SCENE_TYPE = {"Kitchen": range(1, 31),
+'''
+SCENE_TYPE = {"kitchen": range(1, 31),
               "LivingRoom": range(201, 231),
               "Bedroom": range(301, 331),
               "Bathroom": range(401, 431)}
 
+SCENE_TYPE = ["kitchen", "living-room", "bedroom", "bathroom"]
+'''
+
 OBJECTS = [
     'AlarmClock',
     'Apple',
+    'AppleSlice',
     'ArmChair',
     'BaseballBat',
     'BasketBall',
@@ -147,6 +152,8 @@ OBJECTS = [
     'Book',
     'Boots',
     'Bowl',
+    'BowlDirty',
+    'BowlFilled',
     'Box',
     'Bread',
     'ButterKnife',
@@ -158,6 +165,8 @@ OBJECTS = [
     'Chair',
     'Cloth',
     'CoffeeMachine',
+    'Container',
+    'ContainerFull',
     'CounterTop',
     'CreditCard',
     'Cup',
@@ -165,9 +174,12 @@ OBJECTS = [
     'Desk',
     'DeskLamp',
     'DishSponge',
+    'Dirt',
     'Drawer',
     'Dresser',
     'Egg',
+    'EggShell',
+    'EggFried',
     'FloorLamp',
     'Footstool',
     'Fork',
@@ -189,7 +201,9 @@ OBJECTS = [
     'Microwave',
     'Mirror',
     'Mug',
+    'MugFilled',
     'Newspaper',
+    "Omelette",
     'Ottoman',
     'Painting',
     'Pan',
@@ -207,6 +221,7 @@ OBJECTS = [
     'RemoteControl',
     'Safe',
     'SaltShaker',
+    'Sandwich',
     'ScrubBrush',
     'Shelf',
     'ShowerDoor',
@@ -1121,6 +1136,7 @@ VAL_RECEPTACLE_OBJECTS = {
     'TVStand': {'TissueBox'},
     'Toaster': {'BreadSliced'},
 }
+
 VAL_RECEPTACLE_OBJECTS['DiningTable'] = VAL_RECEPTACLE_OBJECTS['TableTop']
 VAL_RECEPTACLE_OBJECTS['CoffeeTable'] = VAL_RECEPTACLE_OBJECTS['TableTop']
 VAL_RECEPTACLE_OBJECTS['SideTable'] = VAL_RECEPTACLE_OBJECTS['TableTop']
@@ -1250,7 +1266,7 @@ OBJ_CLS_VOCAB = 'files/obj_cls.vocab'
 # TRAJECTORIES GENERATION
 LOG_FILE = os.path.join(os.environ['ET_DATA'], 'logs_gen')
 # paths to layouts
-LAYOUTS_PATH = os.path.join(os.environ['ET_ROOT'], 'alfred/gen/layouts')
+LAYOUTS_PATH = os.path.join(os.environ['ET_ROOT'], 'alfred/gen/layouts_procthor')
 FF_PATH = os.path.join(os.environ['ET_ROOT'], 'alfred/gen/ff_planner/ff')
 PLANNER_PATH = os.path.join(os.environ['ET_ROOT'], 'alfred/gen/planner')
 # scene numbers from the paper
@@ -1265,12 +1281,12 @@ PAPER_TRAIN_SCENES = [
     418, 419, 420, 421, 422, 423, 426, 427, 428, 429, 430]
 PAPER_VALID_UNSEEN_SCENES = [10, 219, 308, 424]
 PAPER_TEST_UNSEEN_SCENES = [9, 29, 215, 226, 315, 325, 404, 425]
-SCENE_NUMBERS_PER_ROOM = {'kitchen': list(range(1, 31)),
-                          'living': list(range(201, 231)),
-                          'bedroom': list(range(301, 331)),
-                          'bathroom': list(range(401, 431))}
+#SCENE_NUMBERS_PER_ROOM = {'kitchen': list(range(1, 31)),
+#                          'living': list(range(201, 231)),
+#                          'bedroom': list(range(301, 331)),
+#                          'bathroom': list(range(401, 431))}
 
-'''
+
 OBJECTS_ACTIONS = [
     'None', 'AlarmClock', 'Apple', 'AppleSliced', 'ArmChair', 'BaseballBat',
     'BasketBall', 'Bathtub', 'BathtubBasin', 'Bed', 'Book', 'Bowl',
@@ -1287,21 +1303,4 @@ OBJECTS_ACTIONS = [
     'StoveBurner', 'TVStand', 'TennisRacket', 'TissueBox', 'Toilet', 'ToiletPaper',
     'ToiletPaperHanger', 'Tomato', 'TomatoSliced', 'Vase', 'Watch', 'WateringCan',
     'WineBottle']
-'''
 
-OBJECTS_ACTIONS = [
-    'None', 'AlarmClock', 'Apple', 'AppleSliced', 'ArmChair', 'BaseballBat',
-    'BasketBall', 'Bathtub', 'BathtubBasin', 'Bed', 'Book', 'Bowl',
-    'Box', 'Bread', 'BreadSliced', 'ButterKnife', 'CD', 'Cabinet',
-    'Candle', 'Cart', 'CellPhone', 'Cloth', 'CoffeeMachine', 'CoffeeTable',
-    'CounterTop', 'CreditCard', 'Cup', 'Desk', 'DeskLamp', 'DiningTable',
-    'DishSponge', 'Drawer', 'Dresser', 'Egg', 'Faucet', 'FloorLamp', 'Fork',
-    'Fridge', 'GarbageCan', 'Glassbottle', 'HandTowel', 'Kettle', 'KeyChain',
-    'Knife', 'Ladle', 'Laptop', 'Lettuce', 'LettuceSliced', 'Microwave', 'Mug',
-    'Newspaper', 'Ottoman', 'Pan', 'Pen', 'Pencil', 'PepperShaker',
-    'Pillow', 'Plate', 'Plunger', 'Pot', 'Potato', 'PotatoSliced', 'RemoteControl',
-    'Safe', 'SaltShaker', 'Shelf', 'Sink', 'SinkBasin', 'SoapBar',
-    'SoapBottle', 'Sofa', 'Spatula', 'Spoon', 'SprayBottle', 'Statue',
-    'StoveBurner', 'TVStand', 'TennisRacket', 'TissueBox', 'Toilet', 'ToiletPaper',
-    'ToiletPaperHanger', 'Tomato', 'TomatoSliced', 'Vase', 'Watch', 'WateringCan',
-    'WineBottle']

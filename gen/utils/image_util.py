@@ -1,5 +1,5 @@
 import numpy as np
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 
 from PIL import Image
 from io import BytesIO

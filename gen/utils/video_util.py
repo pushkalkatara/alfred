@@ -1,6 +1,6 @@
 import os
 import subprocess
-import alfred.gen.constants as constants
+import alfred.gen.constants_procthor as constants
 
 class VideoSaver(object):
 

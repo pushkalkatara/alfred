@@ -1,4 +1,5 @@
 import os
+import pdb
 import sys
 import time
 import multiprocessing as mp
@@ -13,12 +14,13 @@ from collections import OrderedDict
 from datetime import datetime
 from sacred import Ingredient, Experiment
 
-from alfred.env.thor_env import ThorEnv
-from alfred.gen import constants
+from alfred.procthor_env.procthor_env import ThorEnv
+from alfred.gen import constants_procthor as constants
 from alfred.gen.agents.deterministic_planner_agent import DeterministicPlannerAgent
 from alfred.gen.game_states.task_game_state_full_knowledge import TaskGameStateFullKnowledge
 from alfred.gen.utils import video_util, dataset_management_util
 from alfred.utils import helper_util
+import prior
 
 args_ingredient = Ingredient('args')
 ex = Experiment('generate_trajs', ingredients=[args_ingredient])
@@ -179,8 +181,8 @@ def sample_task_params(
             # Select a pickup object.
             elif variable == "pickup":
                 pickup_obj = value
-                # print("sampled pickup object '%s' with prob %.4f" %
-                #       (pickup_obj,  pickup_probs[pickup_candidates.index(pickup_obj)]))
+                #print("sampled pickup object '%s' with prob %.4f" %
+                #      (pickup_obj,  pickup_probs[pickup_candidates.index(pickup_obj)]))
                 _pickup_candidates = [pickup_obj]
 
                 _goal_candidates = goal_candidates[:]
@@ -191,8 +193,8 @@ def sample_task_params(
             # Select a movable object.
             elif variable == "movable":
                 movable_obj = value
-                # print("sampled movable object '%s' with prob %.4f" %
-                #       (movable_obj,  movable_probs[movable_candidates.index(movable_obj)]))
+                #print("sampled movable object '%s' with prob %.4f" %
+                #      (movable_obj,  movable_probs[movable_candidates.index(movable_obj)]))
                 _movable_candidates = [movable_obj]
                 _goal_candidates = [g for g in goal_candidates if g == 'pick_and_place_with_movable_recep']
 
@@ -203,8 +205,8 @@ def sample_task_params(
             # Select a receptacle.
             elif variable == "receptacle":
                 receptacle_obj = value
-                # print("sampled receptacle object '%s' with prob %.4f" %
-                #       (receptacle_obj, receptacle_probs[receptacle_candidates.index(receptacle_obj)]))
+                #print("sampled receptacle object '%s' with prob %.4f" %
+                #      (receptacle_obj, receptacle_probs[receptacle_candidates.index(receptacle_obj)]))
                 _receptacle_candidates = [receptacle_obj]
 
                 _goal_candidates = goal_candidates[:]
@@ -215,8 +217,8 @@ def sample_task_params(
             # Select a scene.
             else:
                 sampled_scene = value
-                # print("sampled scene %s with prob %.4f" %
-                #       (sampled_scene, scene_probs[scene_candidates.index(sampled_scene)]))
+                #print("sampled scene %s with prob %.4f" %
+                #      (sampled_scene, scene_probs[scene_candidates.index(sampled_scene)]))
                 _scene_candidates = [sampled_scene]
 
                 _goal_candidates = goal_candidates[:]
@@ -321,7 +323,7 @@ def sample_task_params(
                               "movable": len(_movable_candidates), "receptacle": len(_receptacle_candidates),
                               "scene": len(_scene_candidates)}
             if candidate_lens["goal"] == 0:
-                # print("Goal over-constrained; skipping")
+                print("Goal over-constrained; skipping")
                 continue
             if np.all([0 in [candidate_lens[v] for v in goal_to_required_variables[g]] for g in _goal_candidates]):
                 continue
@@ -396,36 +398,66 @@ def generate(args):
     if isinstance(args.x_display, (list, tuple)):
         args.x_display = random.choice(args.x_display)
 
+    supported_scene_types = ["kitchen", "living-room", "bathroom", "bedroom"]
+    all_scene_numbers = []
+    dataset = prior.load_dataset("procthor-10k")
+    for house_idx in range(len(dataset['train'])):
+        specId = dataset['train'][house_idx]['metadata']['roomSpecId']
+        if specId in supported_scene_types:
+            all_scene_numbers.append(house_idx)
     # Set up data structure to track dataset balance and use for selecting next parameters.
     # In actively gathering data, we will try to maximize entropy for each (e.g., uniform spread of goals,
     # uniform spread over patient objects, uniform recipient objects, and uniform scenes).
     succ_traj = pd.DataFrame(columns=["goal", "pickup", "movable", "receptacle", "scene"])
 
+    # scene-type database
+    for house_idx in all_scene_numbers:
+        roomSpecId = dataset['train'][house_idx]['metadata']['roomSpecId']
+        if roomSpecId in scene_to_type:
+            scene_to_type[roomSpecId].append(house_idx)
+        else:
+            scene_to_type[roomSpecId] = [house_idx]
+
+    all_scene_numbers = [0]
     # objects-to-scene and scene-to-objects database
-    for scene_type, ids in constants.SCENE_TYPE.items():
-        for id in ids:
-            obj_json_file = os.path.join(
-                constants.LAYOUTS_PATH, 'FloorPlan%d-objects.json' % id)
-            with open(obj_json_file, 'r') as of:
-                scene_objs = json.load(of)
 
-            id_str = str(id)
-            scene_id_to_objs[id_str] = scene_objs
-            for obj in scene_objs:
-                if obj not in obj_to_scene_ids:
-                    obj_to_scene_ids[obj] = set()
-                obj_to_scene_ids[obj].add(id_str)
+    for house_idx in all_scene_numbers:
+        obj_json_file = os.path.join(
+            constants.LAYOUTS_PATH, 'House%d-objects.json' % house_idx)
+        with open(obj_json_file, 'r') as of:
+            scene_objs = json.load(of)
+        id_str = str(house_idx)
+        scene_id_to_objs[id_str] = scene_objs
+        for obj in scene_objs:
+            if obj not in obj_to_scene_ids:
+                obj_to_scene_ids[obj] = set()
+            obj_to_scene_ids[obj].add(id_str)
+    '''
+    # objects-to-scene and scene-to-objects database for debug 1
 
+    obj_json_file = os.path.join(
+        constants.LAYOUTS_PATH, 'House%d-objects.json' % house_idx)
+    with open(obj_json_file, 'r') as of:
+        scene_objs = json.load(of)
+    id_str = str(house_idx)
+    scene_id_to_objs[id_str] = scene_objs
+    for obj in scene_objs:
+        if obj not in obj_to_scene_ids:
+            obj_to_scene_ids[obj] = set()
+        obj_to_scene_ids[obj].add(id_str)
+    '''
     # scene-goal database
     for g in constants.GOALS:
         for st in constants.GOALS_VALID[g]:
-            scenes_for_goal[g].extend([str(s) for s in constants.SCENE_TYPE[st]])
+            scenes_for_goal[g].extend([str(s) for s in scene_to_type[st]])
         scenes_for_goal[g] = set(scenes_for_goal[g])
 
+    '''
     # scene-type database
     for st in constants.SCENE_TYPE:
         for s in constants.SCENE_TYPE[st]:
             scene_to_type[str(s)] = st
+    '''
 
     # pre-populate counts in this structure using saved trajectories path.
     succ_traj, full_traj = dataset_management_util.load_successes_from_disk(
@@ -438,12 +470,8 @@ def generate(args):
     fail_traj = dataset_management_util.load_fails_from_disk(args.save_path)
     print("Loaded %d known failed tuples" % len(fail_traj))
 
-    import prior
-    dataset = prior.load_dataset("procthor-10k")
-    house = dataset["train"][0]
-
     # create env and agent
-    env = ThorEnv(x_display=args.x_display, scene=house)
+    env = ThorEnv(x_display=args.x_display, scene=dataset['train'][0])
 
     game_state = TaskGameStateFullKnowledge(env)
     agent = DeterministicPlannerAgent(thread_id=0, game_state=game_state)
@@ -464,13 +492,14 @@ def generate(args):
             if obj in obj_to_scene_ids]
 
     # toaster isn't interesting in terms of producing linguistic diversity
-    receptacle_candidates.remove('Toaster')
+    #receptacle_candidates.remove('Toaster')
     receptacle_candidates.sort()
 
     scene_candidates = list(scene_id_to_objs.keys())
 
     n_until_load_successes = args.async_load_every_n_samples
     print_successes(succ_traj)
+
     task_sampler = sample_task_params(
         succ_traj, full_traj, fail_traj,
         goal_candidates, pickup_candidates, movable_candidates,
@@ -546,10 +575,10 @@ def generate(args):
                 if num_place_fails > 0:
                     print("Failed %d placements in the past; increased free point constraints: " % num_place_fails + str(constraint_objs))
                 scene_info = {'scene_num': sampled_scene,
-                              'random_seed': random.randint(0, 2 ** 32)}
+                              'random_seed': random.randint(0, 2 ** 3),
+                              'procthor_scene' : dataset['train'][sampled_scene]}
                 info = agent.reset(scene=scene_info,
                                    objs=constraint_objs)
-
                 # Problem initialization with given constraints.
                 task_objs = {'pickup': pickup_obj}
                 if movable_obj != "None":
@@ -576,7 +605,7 @@ def generate(args):
                 # based on stored object and toggle info. This should put objects closer to the final positions they'll
                 # be inlay at inference time (e.g., mugs fallen and broken, knives fallen over, etc.).
                 print("Performing reset via thor_env API")
-                env.reset(sampled_scene)
+                env.reset(dataset['train'][sampled_scene])
                 print("Performing restore via thor_env API")
                 env.restore_scene(object_poses, object_toggles, dirty_and_empty)
                 event = env.step(dict(constants.data_dict['scene']['init_action']))
@@ -664,7 +693,7 @@ def generate(args):
             else:
                 print("Reloading trajectories from disk because of parallel processes...")
                 succ_traj = pd.DataFrame(columns=succ_traj.columns)  # Drop all rows.
-                succ_traj, full_traj = load_successes_from_disk(
+                succ_traj, full_traj = dataset_management_util.load_successes_from_disk(
                     args.save_path, succ_traj, False, args.repeats_per_cond)
                 print("... Loaded %d trajectories" % len(succ_traj.index))
                 n_until_load_successes = args.async_load_every_n_samples
@@ -701,7 +730,7 @@ def setup_data_dict():
     constants.data_dict['task_type'] = ""
     constants.data_dict['scene'] = {
         'floor_plan': "", 'random_seed': -1, 'scene_num': -1, 'init_action': [],
-        'object_poses': [], 'dirty_and_empty': None, 'object_toggles': []}
+        'object_poses': [], 'dirty_and_empty': None, 'object_toggles': [], 'procthor_scene' : None}
     constants.data_dict['plan'] = {'high_pddl': [], 'low_actions': []}
     constants.data_dict['images'] = []
     constants.data_dict['template'] = {'task_desc': "", 'high_descs': []}
@@ -749,7 +778,7 @@ def cfg_args():
     # debug mode
     debug = False
     # where to save the generated data
-    name = 'ET_synth'
+    name = 'ET_procthor'
     # X server number
     x_display = '1'
     # just examine what data is gathered; don't gather more
@@ -768,6 +797,7 @@ def cfg_args():
 def main(args):
     args = helper_util.AttrDict(**args)
     args.save_path = os.path.join(constants.ET_DATA, args.name)
+    args.num_threads = 1
     if args.num_threads > 1:
         parallel_generate(args)
     else:
