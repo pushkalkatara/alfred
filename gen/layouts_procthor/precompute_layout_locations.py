@@ -14,6 +14,7 @@ import prior
 import pdb
 
 import gen.constants_procthor as constants
+import gen.procthor_filter as procthor_filter
 from procthor_env.procthor_env import ThorEnv
 
 #from preprocess_procthor_10k import load_dataset_constrained
@@ -25,13 +26,8 @@ lock = threading.Lock()
 supported_scene_types = ["kitchen", "living-room", "bathroom", "bedroom"]
 all_scene_numbers = []
 dataset = prior.load_dataset("procthor-10k")
-for house_idx in range(len(dataset['train'])):
-    specId = dataset['train'][house_idx]['metadata']['roomSpecId']
-    if specId in supported_scene_types:
-        all_scene_numbers.append(house_idx)
-
-#all_scene_numbers = list(range(len(dataset['train'])))
-all_scene_numbers.reverse()
+all_scene_numbers = procthor_filter.filter_alfred_scenes(dataset)
+all_scene_numbers = list(range(len(dataset['train'])))
 
 def get_obj(env, open_test_objs, reachable_points, agent_height, scene, good_obj_point):
 
@@ -160,7 +156,8 @@ def run_procthor():
         # Get all the reachable points through Unity for this step size.
         event = env.step(dict(action='GetReachablePositions'))
                               #gridSize=constants.AGENT_STEP_SIZE / constants.RECORD_SMOOTHING_FACTOR))
-        event = event[0]
+        #event = event[0]
+
         if event.metadata['actionReturn'] is None:
             print("ERROR: scene %d 'GetReachablePositions' returns None" % scene_num)
         else:
@@ -353,8 +350,8 @@ def run_procthor():
                 if not np.any([obj in obj_key for obj_key in best_open_point]):
                     print("WARNING: Essential object %s has no open points in scene %s" % (obj, scene['metadata']['roomSpecId']))
 
-            print("scene %s found open/pick/place/close positions for %d/%d receptacle objects" %
-                  (scene['metadata']['roomSpecId'], len(best_open_point), len(scene_receptacles)))
+            print("scene %d found open/pick/place/close positions for %d/%d receptacle objects" %
+                  (scene_num, len(best_open_point), len(scene_receptacles)))
             with open(openable_json_file, 'w') as f:
                 json.dump(best_open_point, f, sort_keys=True, indent=4)
 

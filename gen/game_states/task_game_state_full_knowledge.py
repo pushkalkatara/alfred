@@ -324,7 +324,7 @@ class TaskGameStateFullKnowledge(TaskGameState):
                 action['forceVisible'] = forceVisible
                 should_fail = False
         elif action['action'] == 'CleanObject':
-            action['objectId'] = action['receptacleObjectId']
+            #action['objectId'] = action['receptacleObjectId']
             action['cleanObjectId'] = action['objectId']
             action['forceVisible'] = forceVisible
             should_fail = False
@@ -427,12 +427,13 @@ class TaskGameStateFullKnowledge(TaskGameState):
                     parent = parent + "|BathtubBasin"
                     fix_basin = True
 
+                '''
                 # ignore Floor as receptacle
                 fix_floor = True
                 if fix_floor:
                     if parent.startswith('Floor'):
                         continue
-
+                '''
                 if fix_basin:
                     try:
                         parent = game_util.get_object(parent, self.env.last_event.metadata)
@@ -440,13 +441,15 @@ class TaskGameStateFullKnowledge(TaskGameState):
                         raise Exception('No object named %s in scene %s' % (parent, self.scene_name))
                 else:
                     parent = game_util.get_object(parent, self.env.last_event.metadata)
-                
-
 
                 if not parent['openable'] or parent['isOpen']:
                     parent_receptacle = parent['objectId']
-                    self.in_receptacle_ids[parent_receptacle].add(obj_id)
-                    self.object_to_point[obj_id] = self.receptacle_to_point[parent_receptacle]
-                    self.point_to_object[tuple(self.receptacle_to_point[parent_receptacle].tolist())] = obj_id
-
+                    #self.in_receptacle_ids[parent_receptacle].add(obj_id)
+                    #self.object_to_point[obj_id] = self.receptacle_to_point[parent_receptacle]
+                    #self.point_to_object[tuple(self.receptacle_to_point[parent_receptacle].tolist())] = obj_id
+                    if parent_receptacle in self.in_receptacle_ids:
+                        self.in_receptacle_ids[parent_receptacle].add(obj_id)
+                        self.object_to_point[obj_id] = self.receptacle_to_point[parent_receptacle]
+                        self.point_to_object[tuple(self.receptacle_to_point[parent_receptacle].tolist())] = obj_id
+                        
         self.need_plan_update = True

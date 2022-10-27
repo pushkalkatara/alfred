@@ -21,6 +21,7 @@ from alfred.gen.game_states.task_game_state_full_knowledge import TaskGameStateF
 from alfred.gen.utils import video_util, dataset_management_util
 from alfred.utils import helper_util
 import prior
+import alfred.gen.procthor_filter as procthor_filters
 
 args_ingredient = Ingredient('args')
 ex = Experiment('generate_trajs', ingredients=[args_ingredient])
@@ -398,13 +399,11 @@ def generate(args):
     if isinstance(args.x_display, (list, tuple)):
         args.x_display = random.choice(args.x_display)
 
-    supported_scene_types = ["kitchen", "living-room", "bathroom", "bedroom"]
-    all_scene_numbers = []
     dataset = prior.load_dataset("procthor-10k")
-    for house_idx in range(len(dataset['train'])):
-        specId = dataset['train'][house_idx]['metadata']['roomSpecId']
-        if specId in supported_scene_types:
-            all_scene_numbers.append(house_idx)
+    all_scene_numbers = procthor_filters.filter_alfred_scenes(dataset)
+
+    # test now for 1 scene
+    all_scene_numbers = [all_scene_numbers[0]]
     # Set up data structure to track dataset balance and use for selecting next parameters.
     # In actively gathering data, we will try to maximize entropy for each (e.g., uniform spread of goals,
     # uniform spread over patient objects, uniform recipient objects, and uniform scenes).
@@ -418,9 +417,9 @@ def generate(args):
         else:
             scene_to_type[roomSpecId] = [house_idx]
 
-    all_scene_numbers = [0]
-    # objects-to-scene and scene-to-objects database
+    constants.SCENE_TYPE = scene_to_type
 
+    # objects-to-scene and scene-to-objects database
     for house_idx in all_scene_numbers:
         obj_json_file = os.path.join(
             constants.LAYOUTS_PATH, 'House%d-objects.json' % house_idx)
@@ -432,27 +431,16 @@ def generate(args):
             if obj not in obj_to_scene_ids:
                 obj_to_scene_ids[obj] = set()
             obj_to_scene_ids[obj].add(id_str)
-    '''
-    # objects-to-scene and scene-to-objects database for debug 1
 
-    obj_json_file = os.path.join(
-        constants.LAYOUTS_PATH, 'House%d-objects.json' % house_idx)
-    with open(obj_json_file, 'r') as of:
-        scene_objs = json.load(of)
-    id_str = str(house_idx)
-    scene_id_to_objs[id_str] = scene_objs
-    for obj in scene_objs:
-        if obj not in obj_to_scene_ids:
-            obj_to_scene_ids[obj] = set()
-        obj_to_scene_ids[obj].add(id_str)
-    '''
     # scene-goal database
     for g in constants.GOALS:
         for st in constants.GOALS_VALID[g]:
-            scenes_for_goal[g].extend([str(s) for s in scene_to_type[st]])
+            if st in constants.SCENE_TYPE:
+                scenes_for_goal[g].extend([str(s) for s in constants.SCENE_TYPE[st]])
         scenes_for_goal[g] = set(scenes_for_goal[g])
 
     '''
+    We are doing this above
     # scene-type database
     for st in constants.SCENE_TYPE:
         for s in constants.SCENE_TYPE[st]:
@@ -575,10 +563,11 @@ def generate(args):
                 if num_place_fails > 0:
                     print("Failed %d placements in the past; increased free point constraints: " % num_place_fails + str(constraint_objs))
                 scene_info = {'scene_num': sampled_scene,
-                              'random_seed': random.randint(0, 2 ** 3),
-                              'procthor_scene' : dataset['train'][sampled_scene]}
+                              'random_seed': random.randint(0, 2 ** 32),
+                              'procthor_scene': dataset['train'][sampled_scene]}
                 info = agent.reset(scene=scene_info,
                                    objs=constraint_objs)
+
                 # Problem initialization with given constraints.
                 task_objs = {'pickup': pickup_obj}
                 if movable_obj != "None":
@@ -595,7 +584,7 @@ def generate(args):
                                  'rotation': obj['rotation']}
                                 for obj in env.last_event.metadata['objects'] if obj['pickupable']]
                 dirty_and_empty = gtype == 'pick_clean_then_place_in_recep'
-                object_toggles = [{'objectType': o, 'isOn': v}
+                object_toggles = [{'objectType': o, 'stateChange': 'toggleable', 'isToggled': v}
                                   for o, v in constraint_objs['seton']]
                 constants.data_dict['scene']['object_poses'] = object_poses
                 constants.data_dict['scene']['dirty_and_empty'] = dirty_and_empty
@@ -609,11 +598,11 @@ def generate(args):
                 print("Performing restore via thor_env API")
                 env.restore_scene(object_poses, object_toggles, dirty_and_empty)
                 event = env.step(dict(constants.data_dict['scene']['init_action']))
-
                 terminal = False
                 while not terminal and agent.current_frame_count <= constants.MAX_EPISODE_LENGTH:
                     action_dict = agent.get_action(None)
-                    agent.step(action_dict)
+                    print(action_dict)
+                    event = agent.step(action_dict)
                     reward, terminal = agent.get_reward()
 
                 dump_data_dict()
